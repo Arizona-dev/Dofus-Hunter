@@ -1,0 +1,39 @@
+[
+    {
+        "startPos": [
+            -1,
+            -1
+        ],
+        "startPosDescription": "une pomme",
+        "hints": [
+            {
+                "hintDirection": 4,
+                "hintText": "West",
+                "completeHint": "4 West"
+            },
+            {
+                "hintDirection": 6,
+                "hintText": "North",
+                "completeHint": "6 North"
+            },
+            {
+                "hintDirection": 2,
+                "hintText": "South",
+                "completeHint": "2 South"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "East",
+                "completeHint": "0 East"
+            },
+            {
+                "hintDirection": 2,
+                "hintText": "End Hunt",
+                "completeHint": "0 End Hunt"
+            }
+        ],
+        "step": 1,
+        "totalSteps": 3,
+        "isFirstHint": true
+    }
+]

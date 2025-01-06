@@ -1,0 +1,894 @@
+<html lang="fr_FR">
+  <head>
+    <title>Résolution de chasse aux trésors</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="./src/favicon.ico" sizes="32x32" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="./src/main_style.css"
+      title="wsite-theme-css"
+    />
+    <style>
+      body.wsite-background {
+        background-attachment: fixed !important;
+      }
+      .wsite-background.wsite-custom-background {
+        background-size: cover !important;
+      }
+    </style>
+    <script src="./src/jquery-1.8.3.min.js"></script>
+  </head>
+  <body
+    class="short-header-page wsite-theme-light wsite-page-resolution-de-chasse-aux-tresors"
+  >
+    <div id="main-wrap">
+      <table style="width: 100%">
+        <tbody>
+          <tr>
+            <td>
+              <div class="container">
+                <div id="wsite-content" class="wsite-elements wsite-not-footer">
+                  <h2 class="wsite-content-title" style="text-align: center">
+                    <strong>Résolution de chasse aux trésors</strong><br />
+                  </h2>
+                  <div>
+                    <div
+                      id="210397366878285306"
+                      align="left"
+                      style="width: 100%; overflow-y: hidden"
+                      class="wcustomhtml"
+                    >
+                      <style>
+                        .hunt-solver-tool {
+                          border-radius: 10px;
+                          background: #e6d0a9;
+                          padding: 10px;
+                          font-family: sans-serif;
+                        }
+                        .hunt-tool-lang input[type="radio"],
+                        .hunt-direction-dpln input[type="radio"],
+                        .hunt-theme input[type="radio"] {
+                          position: absolute;
+                          opacity: 0;
+                          left: -9999px;
+                        }
+                        .hunt-tool-lang {
+                          display: flex;
+                          justify-content: flex-end;
+                        }
+                        .hunt-tool-lang > label {
+                          cursor: pointer;
+                          -webkit-filter: brightness(0.5) opacity(0.5);
+                          -moz-filter: brightness(0.5) opacity(0.5);
+                          filter: brightness(0.5) opacity(0.5);
+                        }
+                        .hunt-tool-lang label:hover {
+                          -webkit-filter: brightness(0.9) opacity(0.9);
+                          -moz-filter: brightness(0.9) opacity(0.9);
+                          filter: brightness(0.9) opacity(0.9);
+                        }
+                        .hunt-tool-lang input:checked + label {
+                          -webkit-filter: none;
+                          -moz-filter: none;
+                          filter: none;
+                        }
+                        .hunt-tool-lang > label img {
+                          width: 30px;
+                          padding: 0 1px;
+                        }
+                        .hunt-clue-data {
+                          text-align: center;
+                        }
+                        .hunt-clue-data form > div {
+                          padding: 10px;
+                        }
+                        .hunt-current-coord,
+                        .hunt-direction,
+                        .clue-search {
+                          text-align: center;
+                        }
+                        .hunt-current-coord input {
+                          font-family: "Lato", sans-serif;
+                          font-size: 15px;
+                          font-weight: normal;
+                          background: #fff;
+                          border: 1px solid #e0e0e0;
+                          padding: 5px 7px;
+                          border-radius: 3px;
+                          box-sizing: border-box;
+                          -moz-box-sizing: border-box;
+                          -webkit-box-sizing: border-box;
+                          max-width: 100px;
+                        }
+                        .hunt-direction input {
+                          font-family: "Lato", sans-serif;
+                          font-size: 15px;
+                          font-weight: normal;
+                          background: #fff;
+                          border: 1px solid #e0e0e0;
+                          padding: 5px 7px;
+                          border-radius: 3px;
+                          box-sizing: border-box;
+                          -moz-box-sizing: border-box;
+                          -webkit-box-sizing: border-box;
+                        }
+                        .hunt-direction-dpln {
+                          display: flex;
+                          justify-content: center;
+                        }
+                        .hunt-direction-dpln > label {
+                          display: flex;
+                          justify-content: center;
+                          align-items: center;
+                          background-color: #ffffffd6;
+                          width: 50px;
+                          height: 50px;
+                          text-align: center;
+                          line-height: 50px;
+                          font-size: 30px;
+                          border-radius: 30px;
+                          cursor: pointer;
+                          margin: 0 20px;
+                        }
+                        .hunt-direction-dpln label:hover {
+                          -webkit-filter: brightness(0.9) opacity(0.9);
+                          -moz-filter: brightness(0.9) opacity(0.9);
+                          filter: brightness(0.9) opacity(0.9);
+                        }
+                        .hunt-direction-dpln input:checked + label {
+                          -webkit-filter: none;
+                          -moz-filter: none;
+                          filter: none;
+                          background: #da4444;
+                        }
+                        .hunt-arrow {
+                          border: solid black;
+                          border-width: 0 3px 3px 0;
+                          display: inline-block;
+                          padding: 3px;
+                        }
+                        .ht-right {
+                          transform: rotate(-45deg);
+                          -webkit-transform: rotate(-45deg);
+                        }
+                        .ht-left {
+                          transform: rotate(135deg);
+                          -webkit-transform: rotate(135deg);
+                        }
+                        .ht-upwards {
+                          transform: rotate(-135deg);
+                          -webkit-transform: rotate(-135deg);
+                        }
+                        .ht-downwards {
+                          transform: rotate(45deg);
+                          -webkit-transform: rotate(45deg);
+                        }
+                        .hunt-clue-choice {
+                          text-align: center;
+                        }
+                        .hunt-clue-choice select {
+                          font-family: "Lato", sans-serif;
+                          font-size: 15px;
+                          font-weight: normal;
+                          background: #fff;
+                          border: 1px solid #e0e0e0;
+                          padding: 5px 7px;
+                          border-radius: 3px;
+                          box-sizing: border-box;
+                          -moz-box-sizing: border-box;
+                          -webkit-box-sizing: border-box;
+                          cursor: pointer;
+                          width: 100%;
+                          max-width: 300px;
+                        }
+                        .hunt-clue-choice select option[disabled] {
+                          display: none;
+                        }
+                        .clue-search {
+                          font-family: "Lato", sans-serif;
+                          font-size: 15px;
+                          font-weight: normal;
+                          background: #f3c800 url(./src/hint-position.png)
+                            no-repeat left;
+                          border: 2px solid #3b3b3b;
+                          padding: 5px 7px;
+                          border-radius: 3px;
+                          box-sizing: border-box;
+                          -moz-box-sizing: border-box;
+                          -webkit-box-sizing: border-box;
+                          cursor: pointer;
+                          padding: 10px;
+                          margin: 10px auto 0 auto;
+                          font-weight: bold;
+                          padding-left: 40px;
+                          height: 50px;
+                        }
+                        .clue-search:hover {
+                          background: #f3b600 url(./src/hint-position.png)
+                            no-repeat left;
+                        }
+                        hr.hrhunt {
+                          border: 0;
+                          height: 1px;
+                          background-image: linear-gradient(
+                            to right,
+                            rgba(0, 0, 0, 0),
+                            rgba(0, 0, 0, 0.75),
+                            rgba(0, 0, 0, 0)
+                          );
+                          width: 50%;
+                          margin: 15px auto;
+                        }
+                        .clue-seek {
+                          line-height: 1.5;
+                          padding: 0.5em 0;
+                        }
+                        .currentclue {
+                          font-weight: bold;
+                          text-decoration: underline;
+                          color: #3b3b3b;
+                        }
+                        .title-hunt {
+                          font-size: 16px;
+                          font-weight: normal;
+                          padding: 0 0 5px 0;
+                        }
+                        .hunt-clue-result {
+                          margin-top: 10px;
+                          text-align: center;
+                          border-radius: 10px;
+                          background: #ffffff7d;
+                          padding: 10px;
+                        }
+                        .clue-search-result {
+                          display: flex;
+                          justify-content: center;
+                          padding-bottom: 20px;
+                        }
+                        .clue-search-result > div {
+                          margin: 10px;
+                        }
+                        .hunt-clue-result-position {
+                          display: flex;
+                          justify-content: center;
+                          font-weight: bold;
+                          font-size: 20px;
+                        }
+                        .hunt-clue-result-position {
+                          display: flex;
+                          flex-direction: column;
+                          justify-content: center;
+                          align-items: center;
+                          color: #3b3b3b;
+                          font-weight: bold;
+                          cursor: pointer;
+                          border-radius: 10px;
+                          padding: 10px;
+                          min-width: 100px;
+                          background-color: rgb(250, 236, 211);
+                          border-left: 5px solid #da4444;
+                          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16),
+                            0 3px 6px rgba(0, 0, 0, 0.23);
+                        }
+                        .hunt-clue-result-position:hover {
+                          background-color: rgb(253, 246, 232);
+                        }
+                        .hunt-clue-result-direction {
+                          display: flex;
+                          flex-direction: column;
+                          justify-content: center;
+                          align-items: center;
+                          color: #3b3b3b;
+                          font-weight: bold;
+                          border-radius: 10px;
+                          min-width: 100px;
+                          padding: 10px;
+                          font-size: 20px;
+                          background-color: rgb(250, 236, 211);
+                          border-left: 5px solid #da4444;
+                          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16),
+                            0 3px 6px rgba(0, 0, 0, 0.23);
+                        }
+                        .hunt-result-direction {
+                          display: flex;
+                          justify-content: center;
+                          align-items: center;
+                        }
+                        .hunt-theme {
+                          display: flex;
+                          justify-content: flex-end;
+                          padding: 5px 5px 0;
+                        }
+                        .hunt-theme div label:hover {
+                          -webkit-filter: brightness(0.9) opacity(0.9);
+                          -moz-filter: brightness(0.9) opacity(0.9);
+                          filter: brightness(0.9) opacity(0.9);
+                        }
+                        .hunt-theme div input:checked + label {
+                          -webkit-filter: none;
+                          -moz-filter: none;
+                          filter: none;
+                          font-weight: bold;
+                          text-decoration: underline;
+                        }
+                        .hunt-theme div > label {
+                          cursor: pointer;
+                          -webkit-filter: brightness(0.5) opacity(0.5);
+                          -moz-filter: brightness(0.5) opacity(0.5);
+                          filter: brightness(0.5) opacity(0.5);
+                          padding: 5px;
+                          font-size: 12px;
+                        }
+                        .hunt-theme div span {
+                          padding: 5px;
+                          font-size: 12px;
+                          line-height: 2;
+                        }
+                        .illu-theme-data {
+                          max-width: 500px;
+                          margin: 0 auto;
+                          padding: 10px;
+                          border-radius: 10px;
+                          background: #ffffffd1;
+                        }
+                        .alert-hunt {
+                          display: none;
+                        }
+                        .hunt-fast-trip {
+                          position: fixed;
+                          bottom: 20px;
+                          left: 17px;
+                          max-width: 250px;
+                        }
+                        .alert-copied-hunt {
+                          background-color: rgb(250, 236, 211);
+                          color: #3b3b3b;
+                          font-weight: bold;
+                          text-align: center;
+                          padding: 10px;
+                          border-left: 5px solid #da4444;
+                          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16),
+                            0 3px 6px rgba(0, 0, 0, 0.23);
+                          z-index: 100000000;
+                        }
+                        .huntautocopy-dpln label {
+                          cursor: pointer;
+                          margin: 0 0 0 5px;
+                          font-style: italic;
+                        }
+                        .huntautocopy-dpln input {
+                          cursor: pointer;
+                        }
+                      </style>
+                      <!-- Hunt resolve tool -->
+                      <div class="hunt-solver-tool" id="hunt-solver-tool">
+                        <div class="hunt-clue-data">
+                          <div class="" id="illu-theme-data">
+                            <form
+                              id="hunt-solver-data"
+                              onsubmit="return huntClueSearch()"
+                            >
+                              <div class="hunt-current-coord">
+                                <label id="hunt-eltX"
+                                  >X :</label
+                                >
+                                <input
+                                  class="huntposx"
+                                  type="number"
+                                  id="huntposx"
+                                  name="huntposx"
+                                  min="-150"
+                                  max="150"
+                                  value="0"
+                                />
+                                <label id="hunt-eltY"
+                                  >Y :</label
+                                >
+                                <input
+                                  class="huntposy"
+                                  type="number"
+                                  id="huntposy"
+                                  name="huntposy"
+                                  min="-150"
+                                  max="150"
+                                  value="0"
+                                />
+                              </div>
+                              <div class="hunt-direction">
+                                <div class="hunt-direction-dpln">
+                                  <input
+                                    type="radio"
+                                    id="huntupwards"
+                                    name="huntdirection"
+                                    value="haut"
+                                  /><label for="huntupwards"
+                                    ><i class="hunt-arrow ht-upwards"></i
+                                  ></label>
+                                </div>
+                                <div class="hunt-direction-dpln">
+                                  <input
+                                    type="radio"
+                                    id="huntleft"
+                                    name="huntdirection"
+                                    value="gauche"
+                                  /><label for="huntleft"
+                                    ><i class="hunt-arrow ht-left"></i
+                                  ></label>
+                                  <input
+                                    type="radio"
+                                    id="huntright"
+                                    name="huntdirection"
+                                    value="droite"
+                                  /><label for="huntright"
+                                    ><i class="hunt-arrow ht-right"></i
+                                  ></label>
+                                </div>
+                                <div class="hunt-direction-dpln">
+                                  <input
+                                    type="radio"
+                                    id="huntdownwards"
+                                    name="huntdirection"
+                                    value="bas"
+                                  /><label for="huntdownwards"
+                                    ><i class="hunt-arrow ht-downwards"></i
+                                  ></label>
+                                </div>
+                              </div>
+                              <div class="hunt-clue-choice">
+                                <label for="clue-choice-select" id="hunt-elt2"
+                                  >Choisir un indice :</label
+                                >
+                                <select id="clue-choice-select">
+                                  <option value="0">
+                                    -- Choisir un indice --
+                                  </option>
+                                  <option value="1">
+                                    Affiche de carte au trésor
+                                  </option>
+                                  <option value="2">Aiguille à coudre</option>
+                                  <option value="3">Ancre dorée</option>
+                                  <option value="4">Anneau d'or</option>
+                                  <option value="5">Arbre à épines</option>
+                                  <option value="6">
+                                    Arbre à moitié coupé
+                                  </option>
+                                  <option value="7">Arbre à trous</option>
+                                  <option value="8">Arbre arc-en-ciel</option>
+                                  <option value="9">Arbre ensanglanté</option>
+                                  <option value="10">Arbre glacé</option>
+                                  <option value="11">Arche naturelle</option>
+                                  <option value="12">Balançoire macabre</option>
+                                  <option value="13">
+                                    Ballons en forme de coeur
+                                  </option>
+                                  <option value="14">
+                                    Bannière bontarienne déchirée
+                                  </option>
+                                  <option value="15">
+                                    Bannière brâkmarienne déchirée
+                                  </option>
+                                  <option value="16">Barque coulée</option>
+                                  <option value="17">Blé noir et blanc</option>
+                                  <option value="18">Bombe coeur</option>
+                                  <option value="19">Bonbon bleu</option>
+                                  <option value="20">
+                                    Bonhomme de neige fondu
+                                  </option>
+                                  <option value="21">
+                                    Bougie dans un trou
+                                  </option>
+                                  <option value="22">
+                                    Boule dorée de marin
+                                  </option>
+                                  <option value="23">Bouton de couture</option>
+                                  <option value="24">
+                                    Buisson poupée sadida
+                                  </option>
+                                  <option value="25">
+                                    Cactus à fleur bleue
+                                  </option>
+                                  <option value="26">Cactus sans épines</option>
+                                  <option value="27">Cadran solaire</option>
+                                  <option value="28">Cairn</option>
+                                  <option value="29">
+                                    Canard en plastique
+                                  </option>
+                                  <option value="30">Canne à kebab</option>
+                                  <option value="31">Carapace de tortue</option>
+                                  <option value="32">Casque à cornes</option>
+                                  <option value="33">Ceinture cloutée</option>
+                                  <option value="34">
+                                    Cerf-volant shinkansen
+                                  </option>
+                                  <option value="35">Champignon rayé</option>
+                                  <option value="36">Chapeau dé</option>
+                                  <option value="37">Chaussette à pois</option>
+                                  <option value="38">Clef dorée</option>
+                                  <option value="39">Cocotte origami</option>
+                                  <option value="40">
+                                    Coeur dans un nénuphar
+                                  </option>
+                                  <option value="41">Coquillage à pois</option>
+                                  <option value="42">
+                                    Corail avec des dents
+                                  </option>
+                                  <option value="43">Corail flûtiste</option>
+                                  <option value="44">Corne de likrone</option>
+                                  <option value="45">Crâ cramé</option>
+                                  <option value="46">Crâne dans un trou</option>
+                                  <option value="47">Crâne de Crâ</option>
+                                  <option value="48">Crâne de cristal</option>
+                                  <option value="49">Crâne de likrone</option>
+                                  <option value="50">
+                                    Crâne de likrone dans la glace
+                                  </option>
+                                  <option value="51">Crâne de renne</option>
+                                  <option value="52">Crâne de Roublard</option>
+                                  <option value="53">
+                                    Croix en pierre brisée
+                                  </option>
+                                  <option value="54">Dé en glace</option>
+                                  <option value="55">
+                                    Dessin au pipi dans la neige
+                                  </option>
+                                  <option value="56">
+                                    Dessin de croix dans un cercle
+                                  </option>
+                                  <option value="57">Dessin dragodinde</option>
+                                  <option value="58">Dessin koalak</option>
+                                  <option value="59">Dofus en bois</option>
+                                  <option value="60">Dolmen</option>
+                                  <option value="61">Échelle cassée</option>
+                                  <option value="62">
+                                    Éolienne à quatre pales
+                                  </option>
+                                  <option value="63">
+                                    Épée prise dans la glace
+                                  </option>
+                                  <option value="64">Épouvantail à pipe</option>
+                                  <option value="65">
+                                    Étoile en papier plié
+                                  </option>
+                                  <option value="66">
+                                    Étoile jaune peinte
+                                  </option>
+                                  <option value="67">
+                                    Étoile rouge en papier
+                                  </option>
+                                  <option value="68">
+                                    Étoile verte en papier
+                                  </option>
+                                  <option value="69">Fer à cheval</option>
+                                  <option value="70">
+                                    Filon de cristaux multicolores
+                                  </option>
+                                  <option value="71">
+                                    Flèche dans une pomme
+                                  </option>
+                                  <option value="72">
+                                    Fleur de nénuphar bleue
+                                  </option>
+                                  <option value="73">Fleurs smiley</option>
+                                  <option value="74">Framboisier</option>
+                                  <option value="75">
+                                    Girouette dragodinde
+                                  </option>
+                                  <option value="76">
+                                    Grand coquillage cassé
+                                  </option>
+                                  <option value="77">Gravure d'aile</option>
+                                  <option value="78">Gravure d'arakne</option>
+                                  <option value="186">Gravure d'Epée</option>
+                                  <option value="187">Gravure d'étoile</option>
+                                  <option value="188">Gravure d'oeil</option>
+                                  <option value="79">Gravure de bouftou</option>
+                                  <option value="80">
+                                    Gravure de boule de poche
+                                  </option>
+                                  <option value="81">Gravure de chacha</option>
+                                  <option value="82">Gravure de clef</option>
+                                  <option value="189">Gravure de coeur</option>
+                                  <option value="190">Gravure de crâne</option>
+                                  <option value="83">Gravure de croix</option>
+                                  <option value="84">Gravure de Dofus</option>
+                                  <option value="85">
+                                    Gravure de dragodinde
+                                  </option>
+                                  <option value="191">
+                                    Gravure de fantôme
+                                  </option>
+                                  <option value="86">
+                                    Gravure de Firefoux
+                                  </option>
+                                  <option value="192">Gravure de flèche</option>
+                                  <option value="193">Gravure de fleur</option>
+                                  <option value="87">Gravure de Gelax</option>
+                                  <option value="194">Gravure de Kama</option>
+                                  <option value="195">
+                                    Gravure de logo Ankama
+                                  </option>
+                                  <option value="196">Gravure de lune</option>
+                                  <option value="197">
+                                    Gravure de papatte
+                                  </option>
+                                  <option value="88">Gravure de point</option>
+                                  <option value="89">
+                                    Gravure de rose des vents
+                                  </option>
+                                  <option value="198">Gravure de soleil</option>
+                                  <option value="90">Gravure de spirale</option>
+                                  <option value="199">
+                                    Gravure de symbole de quête
+                                  </option>
+                                  <option value="200">
+                                    Gravure de symbole égal
+                                  </option>
+                                  <option value="91">Gravure de tofu</option>
+                                  <option value="92">Gravure de wabbit</option>
+                                  <option value="201">Gravure de wukin</option>
+                                  <option value="93">Grelot</option>
+                                  <option value="94">Hache brisée</option>
+                                  <option value="95">
+                                    Kaliptus à fleurs jaunes
+                                  </option>
+                                  <option value="96">Kaliptus coupé</option>
+                                  <option value="97">Kaliptus grignoté</option>
+                                  <option value="98">Kama peint</option>
+                                  <option value="99">Lampadaire fungus</option>
+                                  <option value="100">Lampion bleu</option>
+                                  <option value="101">
+                                    Langue dans un trou
+                                  </option>
+                                  <option value="102">
+                                    Lanterne au crâne luminescent
+                                  </option>
+                                  <option value="103">Lapino origami</option>
+                                  <option value="104">Logo Ankama peint</option>
+                                  <option value="105">Marionnette</option>
+                                  <option value="106">Menottes</option>
+                                  <option value="107">Minouki</option>
+                                  <option value="108">Moufles jaunes</option>
+                                  <option value="109">Moufles rouges</option>
+                                  <option value="110">
+                                    Niche dans une caisse
+                                  </option>
+                                  <option value="111">Obélisque enfoui</option>
+                                  <option value="112">
+                                    Œil de shushu peint
+                                  </option>
+                                  <option value="113">Oeuf dans un trou</option>
+                                  <option value="114">Ornement flocon</option>
+                                  <option value="115">Os dans la lave</option>
+                                  <option value="116">Paire de lunettes</option>
+                                  <option value="117">
+                                    Palmier à feuilles carrées
+                                  </option>
+                                  <option value="118">
+                                    Palmier à feuilles déchirées
+                                  </option>
+                                  <option value="119">Palmier à pois</option>
+                                  <option value="120">
+                                    Palmier peint à rayures
+                                  </option>
+                                  <option value="121">
+                                    Palmier peint d'un chacha
+                                  </option>
+                                  <option value="122">
+                                    Palmier surchargé de noix de coco
+                                  </option>
+                                  <option value="123">
+                                    Palmifleur bleu fleuri
+                                  </option>
+                                  <option value="124">
+                                    Palmifleur jaune fleuri
+                                  </option>
+                                  <option value="125">
+                                    Palmifleur vert fleuri
+                                  </option>
+                                  <option value="126">Panneau nonosse</option>
+                                  <option value="127">Peinture de Dofus</option>
+                                  <option value="128">
+                                    Peluche de likrone
+                                  </option>
+                                  <option value="129">
+                                    Phorreur sournois / baveux / chafouin /
+                                    fourbe
+                                  </option>
+                                  <option value="130">Pioche plantée</option>
+                                  <option value="131">
+                                    Plaque gravée d'un coeur
+                                  </option>
+                                  <option value="132">
+                                    Plaque gravée d'un crâne
+                                  </option>
+                                  <option value="133">
+                                    Plaque gravée d'un fantôme
+                                  </option>
+                                  <option value="134">
+                                    Plaque gravée d'un Kama
+                                  </option>
+                                  <option value="135">
+                                    Plaque gravée d'un logo Ankama
+                                  </option>
+                                  <option value="136">
+                                    Plaque gravée d'un oeil
+                                  </option>
+                                  <option value="137">
+                                    Plaque gravée d'un soleil
+                                  </option>
+                                  <option value="138">
+                                    Plaque gravée d'un symbole de quête
+                                  </option>
+                                  <option value="139">
+                                    Plaque gravée d'un symbole égal
+                                  </option>
+                                  <option value="140">
+                                    Plaque gravée d'un wukin
+                                  </option>
+                                  <option value="141">
+                                    Plaque gravée d'une Epée
+                                  </option>
+                                  <option value="142">
+                                    Plaque gravée d'une étoile
+                                  </option>
+                                  <option value="143">
+                                    Plaque gravée d'une flèche
+                                  </option>
+                                  <option value="144">
+                                    Plaque gravée d'une fleur
+                                  </option>
+                                  <option value="145">
+                                    Plaque gravée d'une lune
+                                  </option>
+                                  <option value="146">
+                                    Plaque gravée d'une papatte
+                                  </option>
+                                  <option value="147">
+                                    Poisson grillé embroché
+                                  </option>
+                                  <option value="148">Poupée koalak</option>
+                                  <option value="149">Queue d'Osamodas</option>
+                                  <option value="150">
+                                    Rocher à sédimentation verticale
+                                  </option>
+                                  <option value="151">Rocher crâne</option>
+                                  <option value="152">Rocher dé</option>
+                                  <option value="153">Rocher Dofus</option>
+                                  <option value="154">Rocher percé</option>
+                                  <option value="155">
+                                    Rocher taillé en arètes de poisson
+                                  </option>
+                                  <option value="156">
+                                    Rose des vents dorée
+                                  </option>
+                                  <option value="157">Rose noire</option>
+                                  <option value="158">
+                                    Rouage pris dans la glace
+                                  </option>
+                                  <option value="159">Ruban bleu noué</option>
+                                  <option value="160">Rune nimbos</option>
+                                  <option value="161">Sapin couché</option>
+                                  <option value="162">Serrure dorée</option>
+                                  <option value="163">Sève qui s'écoule</option>
+                                  <option value="164">
+                                    Slip à petit coeur
+                                  </option>
+                                  <option value="165">
+                                    Soupe de bananagrumes
+                                  </option>
+                                  <option value="166">
+                                    Squelette d'Ouginak pendu
+                                  </option>
+                                  <option value="167">Statue koalak</option>
+                                  <option value="168">Statue sidoa</option>
+                                  <option value="169">Statue wabbit</option>
+                                  <option value="170">Stèle chacha</option>
+                                  <option value="171">Sucre d'orge</option>
+                                  <option value="172">
+                                    Symbole de quête peint
+                                  </option>
+                                  <option value="173">
+                                    Talisman en papier
+                                  </option>
+                                  <option value="174">Tambour à rayures</option>
+                                  <option value="175">Tambour papatte</option>
+                                  <option value="176">Théière à rayures</option>
+                                  <option value="177">
+                                    Tissu à carreaux noué
+                                  </option>
+                                  <option value="178">
+                                    Tombe gravée d'un bouclier
+                                  </option>
+                                  <option value="179">Tombe inondée</option>
+                                  <option value="180">
+                                    Tombe inondée de sang
+                                  </option>
+                                  <option value="181">Torii cassé</option>
+                                  <option value="182">
+                                    Trace de main en sang
+                                  </option>
+                                  <option value="183">Tricycle</option>
+                                  <option value="184">Trou mielleux</option>
+                                  <option value="185">
+                                    Tube rempli de tofus
+                                  </option>
+                                </select>
+                              </div>
+                              <div class="huntautocopy-dpln">
+                                <input
+                                  type="checkbox"
+                                  id="huntautocopy"
+                                  name="huntpilotauto"
+                                /><label for="huntautocopy" id="hunt-elt11"
+                                  >Copier la commande d'autopilotage
+                                  automatiquement</label
+                                >
+                              </div>
+                              <input
+                                type="submit"
+                                value="Trouver la position de l'indice"
+                                class="clue-search"
+                                id="hunt-elt3"
+                              />
+                            </form>
+                          </div>
+                        </div>
+                        <hr class="hrhunt" style="width: 50%" />
+                        <div class="hunt-clue-result" id="hunt-clue-result">
+                          <div class="clue-seek" id="hunt-elt4">
+                            La solution pour l'indice
+                            <span class="currentclue" id="currentclue"
+                              >???</span
+                            >
+                            que vous recherchez est :
+                          </div>
+                          <div class="clue-search-result">
+                            <div
+                              class="hunt-clue-result-position"
+                              id="hunt-clue-travel"
+                              data-travel=""
+                            >
+                              <div class="title-hunt" id="hunt-elt5">
+                                Coordonnées
+                              </div>
+                              <div id="hunt-result-coord">[??,??]</div>
+                            </div>
+                            <div class="hunt-clue-result-direction">
+                              <div class="title-hunt" id="hunt-elt6">
+                                Maps à parcourir
+                              </div>
+                              <div
+                                class="hunt-result-direction"
+                                id="hunt-result-direction"
+                              >
+                                ???
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div id="footer-wrap">
+      <div class="container">
+        <div class="wsite-elements wsite-footer"></div>
+      </div>
+    </div>
+    <div
+      class="dpln-fast-travel alert-fast-travel alert-copied-travel"
+      style="display: none"
+    ></div>
+    <script src="./src/autopilotage.js"></script>
+    <div class="hunt-fast-trip alert-hunt alert-copied-hunt"></div>
+    <script src="./src/chasse.js"></script>
+  </body>
+</html>

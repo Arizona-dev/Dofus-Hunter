@@ -1,0 +1,237 @@
+[
+    {
+        "startPos": [
+            -29,
+            -12
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 4,
+                "hintText": "Bougie dans un trou",
+                "completeHint": "4 Bougie dans un trou"
+            }
+        ],
+        "step": 1,
+        "totalSteps": 4,
+        "isFirstHint": true
+    },
+    {
+        "startPos": [
+            -29,
+            -12
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 4,
+                "hintText": "Bougie dans un trou",
+                "completeHint": "4 Bougie dans un trou"
+            },
+            {
+                "hintDirection": 2,
+                "hintText": "Fleurs smiley",
+                "completeHint": "2 Fleurs smiley"
+            }
+        ],
+        "step": 1,
+        "totalSteps": 4,
+        "isFirstHint": true
+    },
+    {
+        "startPos": [
+            -29,
+            -12
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 4,
+                "hintText": "Bougie dans un trou",
+                "completeHint": "4 Bougie dans un trou"
+            },
+            {
+                "hintDirection": 2,
+                "hintText": "Fleurs smiley",
+                "completeHint": "2 Fleurs smiley"
+            },
+            {
+                "hintDirection": 4,
+                "hintText": "Fl\u00e8che dans une pomme",
+                "completeHint": "4 Fl\u00e8che dans une pomme"
+            }
+        ],
+        "step": 1,
+        "totalSteps": 4,
+        "isFirstHint": true
+    },
+    {
+        "startPos": [
+            -29,
+            -12
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 4,
+                "hintText": "Bougie dans un trou",
+                "completeHint": "4 Bougie dans un trou"
+            },
+            {
+                "hintDirection": 2,
+                "hintText": "Fleurs smiley",
+                "completeHint": "2 Fleurs smiley"
+            },
+            {
+                "hintDirection": 4,
+                "hintText": "Fl\u00e8che dans une pomme",
+                "completeHint": "4 Fl\u00e8che dans une pomme"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "Pioche plant\u00e9e",
+                "completeHint": "0 Pioche plant\u00e9e"
+            }
+        ],
+        "step": 1,
+        "totalSteps": 4,
+        "isFirstHint": true
+    },
+    {
+        "startPos": [
+            -33,
+            -11
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 0,
+                "hintText": "Paire de lunettes",
+                "completeHint": "0 Paire de lunettes"
+            }
+        ],
+        "step": 2,
+        "totalSteps": 4,
+        "isFirstHint": false
+    },
+    {
+        "startPos": [
+            -33,
+            -11
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 0,
+                "hintText": "Paire de lunettes",
+                "completeHint": "0 Paire de lunettes"
+            },
+            {
+                "hintDirection": 6,
+                "hintText": "Ceinture clout\u00e9e",
+                "completeHint": "2 Ceinture clout\u00e9e"
+            }
+        ],
+        "step": 2,
+        "totalSteps": 4,
+        "isFirstHint": false
+    },
+    {
+        "startPos": [
+            -33,
+            -11
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 0,
+                "hintText": "Paire de lunettes",
+                "completeHint": "Paire de lunettes"
+            },
+            {
+                "hintDirection": 2,
+                "hintText": "Ceinture clout\u00e9e",
+                "completeHint": "Ceinture clout\u00e9e"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "Gravure de logo Ankama",
+                "completeHint": "Gravure de logo Ankama"
+            }
+        ],
+        "step": 2,
+        "totalSteps": 4,
+        "isFirstHint": false
+    },
+    {
+        "startPos": [
+            -33,
+            -11
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 0,
+                "hintText": "Paire de lunettes",
+                "completeHint": "Paire de lunettes"
+            },
+            {
+                "hintDirection": 2,
+                "hintText": "Ceinture clout\u00e9e",
+                "completeHint": "Ceinture clout\u00e9e"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "Gravure de logo Ankama",
+                "completeHint": "Gravure de logo Ankama"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "Clef dor\u00e9e",
+                "completeHint": "Clef dor\u00e9e"
+            }
+        ],
+        "step": 2,
+        "totalSteps": 4,
+        "isFirstHint": false
+    },
+    {
+        "startPos": [
+            -30,
+            -17
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 2,
+                "hintText": "Gravure de dragodinde",
+                "completeHint": "4 Gravure de dragodinde"
+            }
+        ],
+        "step": 3,
+        "totalSteps": 4,
+        "isFirstHint": false
+    },
+    {
+        "startPos": [
+            -30,
+            -17
+        ],
+        "startPosDescription": "Plaines de Cania (Baie de Cania)",
+        "hints": [
+            {
+                "hintDirection": 6,
+                "hintText": "Gravure de dragodinde",
+                "completeHint": "6 Gravure de dragodinde"
+            },
+            {
+                "hintDirection": 6,
+                "hintText": "Ancre dor\u00e9e",
+                "completeHint": "0 Ancre dor\u00e9e"
+            }
+        ],
+        "step": 3,
+        "totalSteps": 4,
+        "isFirstHint": false
+    }
+]

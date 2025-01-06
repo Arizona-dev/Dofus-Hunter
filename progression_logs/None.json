@@ -1,0 +1,39 @@
+[
+    {
+        "startPos": [
+            -1,
+            -1
+        ],
+        "startPosDescription": null,
+        "hints": [
+            {
+                "hintDirection": 4,
+                "hintText": "arrow_ocr_model",
+                "completeHint": "4 arrow_ocr_model"
+            },
+            {
+                "hintDirection": 4,
+                "hintText": "dofus_arrows_data",
+                "completeHint": "4 dofus_arrows_data"
+            },
+            {
+                "hintDirection": 4,
+                "hintText": "dofus_hints",
+                "completeHint": "4 dofus_hints"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "OCR",
+                "completeHint": "0 OCR"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "progression_logs",
+                "completeHint": "0 progression_logs"
+            }
+        ],
+        "step": null,
+        "totalSteps": null,
+        "isFirstHint": null
+    }
+]
