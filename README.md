@@ -1,5 +1,7 @@
 # Dofus Hunter
 
+![Dofus Hunter](app.png)
+
 ### Les tâches que l'outil doit être capable de faire sont :
 - Lancer le jeu / relancer le jeu si un bug survient.
 - Aller lancer une chasse (Utiliser une potion de rappel au Zaap de la chasse, Lancer une chasse, sortir de la maison)

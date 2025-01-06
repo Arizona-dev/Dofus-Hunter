@@ -35,5 +35,72 @@
         "step": null,
         "totalSteps": null,
         "isFirstHint": null
+    },
+    {
+        "startPos": [
+            -1,
+            -1
+        ],
+        "startPosDescription": null,
+        "hints": [
+            {
+                "hintDirection": 4,
+                "hintText": "arrow_ocr_model",
+                "completeHint": "4 arrow_ocr_model"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "assets",
+                "completeHint": "0 assets"
+            },
+            {
+                "hintDirection": 4,
+                "hintText": "dofus_arrows_data",
+                "completeHint": "4 dofus_arrows_data"
+            },
+            {
+                "hintDirection": 4,
+                "hintText": "dofus_hints",
+                "completeHint": "4 dofus_hints"
+            },
+            {
+                "hintDirection": 2,
+                "hintText": "OCR",
+                "completeHint": "2 OCR"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "read_hunt_from_screen",
+                "completeHint": "0 read_hunt_from_screen"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": "tesseract_NOK.py",
+                "completeHint": "0 tesseract_NOK.py"
+            },
+            {
+                "hintDirection": 4,
+                "hintText": "progression_logs",
+                "completeHint": "4 progression_logs"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": ".env",
+                "completeHint": "0 .env"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": ".env.example",
+                "completeHint": "0 .env.example"
+            },
+            {
+                "hintDirection": 0,
+                "hintText": ".gitignore",
+                "completeHint": "2 .gitignore"
+            }
+        ],
+        "step": null,
+        "totalSteps": null,
+        "isFirstHint": false
     }
 ]
