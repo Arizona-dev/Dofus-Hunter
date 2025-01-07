@@ -1,20 +1,20 @@
 {
   "player_region": {
     "x": 0,
-    "y": 85,
-    "width": 81,
-    "height": 35
+    "y": 84,
+    "width": 105,
+    "height": 36
   },
   "treasure_region": {
     "x": 0,
-    "y": 198,
-    "width": 362,
-    "height": 374
+    "y": 201,
+    "width": 359,
+    "height": 430
   },
   "chat_region": {
-    "x": 44,
-    "y": 1412,
-    "width": 567,
-    "height": 21
+    "x": 55,
+    "y": 1408,
+    "width": 554,
+    "height": 26
   }
 }

@@ -4,21 +4,17 @@ import pyautogui
 import threading
 import json
 import os
-import json
 import base64
 import pyperclip
 import random
 import re
-import pytesseract
 import pygame
+import asyncio
 from fuzzywuzzy import fuzz
 from PIL import Image
 from io import BytesIO
 from dotenv import load_dotenv
-from anthropic import Anthropic
-from openai import OpenAI
 from pydantic import BaseModel
-from io import BytesIO
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -28,8 +24,10 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from pywinauto.keyboard import send_keys
 from charset_normalizer import from_bytes
-
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+from OCR.screenshot import (
+    read_hunt_from_screenshot,
+    read_coordinates_from_image,
+)
 
 load_dotenv()
 
@@ -424,7 +422,7 @@ class DofusTreasureApp(tk.Tk):
 
     def initialize_selenium(self):
         chrome_options = Options()
-        # chrome_options.add_argument("--headless")  # Run in the background
+        chrome_options.add_argument("--headless")  # Run in the background
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
@@ -492,10 +490,10 @@ class DofusTreasureApp(tk.Tk):
                     treasure_region["width"],
                     treasure_region["height"],
                 )
-                # Sending to GPT
+                # Sending to OCR
+                self.log_message("Sending hint to OCR...")
                 screenshot = pyautogui.screenshot(region=region_tuple)
-                self.log_message("Sending hint to GPT...")
-                response_data = self.send_to_chatgpt(screenshot)
+                response_data = asyncio.run(read_hunt_from_screenshot(screenshot))
                 data = json.loads(response_data)
 
                 required_fields = [
@@ -504,6 +502,7 @@ class DofusTreasureApp(tk.Tk):
                     "hints",
                     "step",
                     "totalSteps",
+                    "remainingTries",
                 ]
                 missing_fields = [
                     field for field in required_fields if field not in data
@@ -521,9 +520,10 @@ class DofusTreasureApp(tk.Tk):
                 # Check if hints exist and are valid
                 if not data["hints"] or not isinstance(data["hints"], list):
                     self.log_message(
-                        "Error: No hints provided in response. Retrying...", "red"
+                        "Error: No hints provided in response.", "red"
                     )
-                    self.next_hint()
+                    # self.next_hint()
+                    self.start_hunt_button.config(state=tk.NORMAL)
                     return
 
                 # Retrieve the last hint
@@ -537,13 +537,13 @@ class DofusTreasureApp(tk.Tk):
                         "Error: Invalid hint structure in response. Retrying...", "red"
                     )
                     self.log_message(f"Received hints: {data['hints']}", "red")
-                    self.next_hint()
+                    # self.next_hint()
                     return
 
                 # Check if hintText is valid
                 if last_hint["hintText"] == "?" or not last_hint["hintText"]:
                     self.log_message("No hint found. Retrying...", "red")
-                    self.next_hint()
+                    # self.next_hint()
                     return
 
                 # Save progression to JSON
@@ -557,7 +557,7 @@ class DofusTreasureApp(tk.Tk):
                         self.log_message(
                             "Failed to retrieve player position. Retrying...", "red"
                         )
-                        self.next_hint()
+                        # self.next_hint()
                         return
                     data["startPos"] = [current_x, current_y]
 
@@ -569,7 +569,7 @@ class DofusTreasureApp(tk.Tk):
                             f"Invalid hintDirection: {last_hint['hintDirection']}. Retrying...",
                             "red",
                         )
-                        self.next_hint()
+                        # self.next_hint()
                         return
 
                 # Check if the coordinates are far from the last hint coordinates. If yes there is a chance that the hint is wrong.
@@ -674,184 +674,181 @@ class DofusTreasureApp(tk.Tk):
 
         return base64_str
 
-    def send_to_claude(self, image, getPlayerPos=False):
-        img_b64_str = self.upscale_to_1080p_and_encode(image, getPlayerPos)
-        img_type = "image/png"
+    # def send_to_claude(self, image, getPlayerPos=False):
+    #     img_b64_str = self.upscale_to_1080p_and_encode(image, getPlayerPos)
+    #     img_type = "image/png"
 
-        prompt = """You are an AI assistant specialized in parsing Dofus treasure hunt hint images. Your task is to analyze the provided image and extract specific information, then return it in a structured JSON format. Follow these instructions carefully:
+    #     prompt = """You are an AI assistant specialized in parsing Dofus treasure hunt hint images. Your task is to analyze the provided image and extract specific information, then return it in a structured JSON format. Follow these instructions carefully:
 
-        1. You will be provided with one image, from dofus treasure hunt.
-        Each hint line in the image contains the following information:
-        - Direction of the hint (hintDirection)
-        - Text of the hint (hintText)
-        - State of the hint eg: EN COURS or VALIDÉ.
-        - Pin icon on the right of the hint eg: white pin.
+    #     1. You will be provided with one image, from dofus treasure hunt.
+    #     Each hint line in the image contains the following information:
+    #     - Direction of the hint (hintDirection)
+    #     - Text of the hint (hintText)
+    #     - State of the hint eg: EN COURS or VALIDÉ.
+    #     - Pin icon on the right of the hint eg: white pin.
 
-        2. Analyze the treasure_hunt_image to extract the following information:
-        a. Starting position coordinates (startPos)
-        b. Map description (startPosDescription)
-        c. List of hints containing the following information:
-            a. Direction of the hint (hintDirection)
-            b. Text of the hint (hintText)
-        d. Current step number (step)
-        e. Total number of steps (totalSteps)
+    #     2. Analyze the treasure_hunt_image to extract the following information:
+    #     a. Starting position coordinates (startPos)
+    #     b. Map description (startPosDescription)
+    #     c. List of hints containing the following information:
+    #         a. Direction of the hint (hintDirection)
+    #         b. Text of the hint (hintText)
+    #     d. Current step number (step)
+    #     e. Total number of steps (totalSteps)
 
-        3. When parsing the image, follow these guidelines:
-        - The starting position is indicated by "Départ [x, y]".
-        - The map description is the text in parentheses below the starting position.
-        - Always return the last hint in the list, don't mix up the hints.
-        - Ignore question marks "?" in the hint text.
-        - Double-check coordinates for negative signs.
-        - Double-check the direction you saw of each hint in the list.
+    #     3. When parsing the image, follow these guidelines:
+    #     - The starting position is indicated by "Départ [x, y]".
+    #     - The map description is the text in parentheses below the starting position.
+    #     - Always return the last hint in the list, don't mix up the hints.
+    #     - Ignore question marks "?" in the hint text.
+    #     - Double-check coordinates for negative signs.
+    #     - Double-check the direction you saw of each hint in the list.
 
-        4. For the hint direction my app has to receive a number. For each hint, the direction of the arrow on the left of the hint list should be converted to a number:
-        - Right = 0
-        - Down = 2
-        - Left = 4
-        - Up = 6
+    #     4. For the hint direction my app has to receive a number. For each hint, the direction of the arrow on the left of the hint list should be converted to a number:
+    #     - Right = 0
+    #     - Down = 2
+    #     - Left = 4
+    #     - Up = 6
 
-        5. Format your response as a JSON object with the following structure:
-        Return the hints in the JSON object in the order they appear in the image.
-        {
-            "startPos": [int, int],
-            "startPosDescription": "string",
-            "hints": [
-                "hintDirection": int,
-                "hintText": "string", (Should not contain EN COURS or VALIDÉ)
-                "completeHint": "hintDirection hintText",
-            ],
-            "step": int,
-            "totalSteps": int,
-            "isFirstHint": bool,
-        }
+    #     5. Format your response as a JSON object with the following structure:
+    #     Return the hints in the JSON object in the order they appear in the image.
+    #     {
+    #         "startPos": [int, int],
+    #         "startPosDescription": "string",
+    #         "hints": [
+    #             "hintDirection": int,
+    #             "hintText": "string", (Should not contain EN COURS or VALIDÉ)
+    #         ],
+    #         "step": int,
+    #         "totalSteps": int,
+    #         "isFirstHint": bool,
+    #     }
 
-        6. If you cannot clearly read or determine any of the required information, use null for that field in the JSON output.
+    #     6. If you cannot clearly read or determine any of the required information, use null for that field in the JSON output.
 
-        7. Do not include any explanations, comments, or additional text outside of the JSON object in your response."""
+    #     7. Do not include any explanations, comments, or additional text outside of the JSON object in your response."""
 
-        getPlayerPosPrompt = """You are an AI assistant specialized in parsing Dofus player coordinates images. Your task is to analyze the provided image and extract the player's current position, then return it in a structured JSON format. Follow these instructions carefully: 
+    #     getPlayerPosPrompt = """You are an AI assistant specialized in parsing Dofus player coordinates images. Your task is to analyze the provided image and extract the player's current position, then return it in a structured JSON format. Follow these instructions carefully: 
         
-        1. You will be provided with an image containing Dofus player coordinates.
+    #     1. You will be provided with an image containing Dofus player coordinates.
         
-        2. Analyze the player_coordinates_image to extract the following information:
-        a. Player's current position coordinates (playerPos) as [x, y]. Ignore any other information in the image.
+    #     2. Analyze the player_coordinates_image to extract the following information:
+    #     a. Player's current position coordinates (playerPos) as [x, y]. Ignore any other information in the image.
         
-        3. When parsing the image, follow these guidelines:
-        - The player's coordinates are shown as numbers on the image.
-        Always double check the reading of the coordinates.
+    #     3. When parsing the image, follow these guidelines:
+    #     - The player's coordinates are shown as numbers on the image.
+    #     Always double check the reading of the coordinates.
         
-        4. Format your response as a JSON object with the following structure:
-        {
-            "playerPos": [int, int] (should not contain any other information than the coordinates) and no -Ni
-        }
+    #     4. Format your response as a JSON object with the following structure:
+    #     {
+    #         "playerPos": [int, int] (should not contain any other information than the coordinates) and no -Ni
+    #     }
         
-        5. Do not include any explanations, comments, or additional text outside of the JSON object in your response.
+    #     5. Do not include any explanations, comments, or additional text outside of the JSON object in your response.
         
-        Analyze the provided images and return only the JSON object as described above."""
+    #     Analyze the provided images and return only the JSON object as described above."""
 
-        client = Anthropic()
+    #     client = Anthropic()
 
-        message = client.messages.create(
-            model="claude-3-haiku-20240307",
-            max_tokens=1000,
-            temperature=0,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": img_type,
-                                "data": img_b64_str,
-                            },
-                        },
-                    ],
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": getPlayerPosPrompt if getPlayerPos else prompt,
-                        }
-                    ],
-                },
-            ],
-            stream=False,
-        )
+    #     message = client.messages.create(
+    #         model="claude-3-haiku-20240307",
+    #         max_tokens=1000,
+    #         temperature=0,
+    #         messages=[
+    #             {
+    #                 "role": "user",
+    #                 "content": [
+    #                     {
+    #                         "type": "image",
+    #                         "source": {
+    #                             "type": "base64",
+    #                             "media_type": img_type,
+    #                             "data": img_b64_str,
+    #                         },
+    #                     },
+    #                 ],
+    #             },
+    #             {
+    #                 "role": "user",
+    #                 "content": [
+    #                     {
+    #                         "type": "text",
+    #                         "text": getPlayerPosPrompt if getPlayerPos else prompt,
+    #                     }
+    #                 ],
+    #             },
+    #         ],
+    #         stream=False,
+    #     )
 
-        self.log_message(f"Claude Response: {message.content[0].text}")
-        return message.content[0].text
+    #     self.log_message(f"Claude Response: {message.content[0].text}")
+    #     return message.content[0].text
 
-    def send_to_chatgpt(self, image, getPlayerPos=False):
-        return self.send_to_claude(image, getPlayerPos)
-        buffer = BytesIO()
-        image.save(buffer, format="PNG")
-        buffer.seek(0)
-        img_b64_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
-        img_type = "image/png"
+    # def send_to_chatgpt(self, image, getPlayerPos=False):
+    #     buffer = BytesIO()
+    #     image.save(buffer, format="PNG")
+    #     buffer.seek(0)
+    #     img_b64_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
+    #     img_type = "image/png"
 
-        gpt_prompt = """[Roles: Treasure Hunt Expert]
-            When presented with an image containing a Dofus treasure hunt hint, parse the image and respond **only** with JSON format, don't return the three quotes and JSON tag.
-            In the list of hints ignore the question marks "?".
-            Take care when reading coordinates, don't forget the - sign if there is one, and always double check your reading.
-            The text "Départ [x, y]" is the starting position of the hunt.
-            The description under it with "(xxxxx)" is the name of the map.
-            You should only return the last hint line that you see in the list.
-            Analyse all the arrows on the left of the hint list, and return for the last hint the direction of the arrow in this format: Number only, the direction of the last hint should be one of the following: 0 when the arrow is facing East (Right), 2 when the arrow is facing South (Down), 4 when the arrow is facing West (Left), 6 when the arrow is facing North (Up).
-            If you see multiple hints in the dofus hunt list, only return the last one that has a white location pin on the right."""
+    #     gpt_prompt = """[Roles: Treasure Hunt Expert]
+    #         When presented with an image containing a Dofus treasure hunt hint, parse the image and respond **only** with JSON format, don't return the three quotes and JSON tag.
+    #         In the list of hints ignore the question marks "?".
+    #         Take care when reading coordinates, don't forget the - sign if there is one, and always double check your reading.
+    #         The text "Départ [x, y]" is the starting position of the hunt.
+    #         The description under it with "(xxxxx)" is the name of the map.
+    #         You should only return the last hint line that you see in the list.
+    #         Analyse all the arrows on the left of the hint list, and return for the last hint the direction of the arrow in this format: Number only, the direction of the last hint should be one of the following: 0 when the arrow is facing East (Right), 2 when the arrow is facing South (Down), 4 when the arrow is facing West (Left), 6 when the arrow is facing North (Up).
+    #         If you see multiple hints in the dofus hunt list, only return the last one that has a white location pin on the right."""
 
-        getPlayerPosPrompt = """[Roles: Dofus Expert]
-            When presented with an image containing a Dofus player coordinates, parse the image and respond **only** with JSON.
-            If you don't receive an image corresponding to a Dofus coordinates, please return an empty object `{}`.
-            Do not include any extra text, explanations, or code fences. The JSON must have these keys:
+    #     getPlayerPosPrompt = """[Roles: Dofus Expert]
+    #         When presented with an image containing a Dofus player coordinates, parse the image and respond **only** with JSON.
+    #         If you don't receive an image corresponding to a Dofus coordinates, please return an empty object `{}`.
+    #         Do not include any extra text, explanations, or code fences. The JSON must have these keys:
 
-            - `"playerPos"`: an array with the x and y coordinates (e.g., `[-16, 1]`).
+    #         - `"playerPos"`: an array with the x and y coordinates (e.g., `[-16, 1]`).
 
-            Example output with no extra verbiage or code fences:
-            ```json
-            {
-            "playerPos": [-16, 2]
-            }
-            ```
-            Focus on providing valid JSON only, with no accompanying statements."""
+    #         Example output with no extra verbiage or code fences:
+    #         ```json
+    #         {
+    #         "playerPos": [-16, 2]
+    #         }
+    #         ```
+    #         Focus on providing valid JSON only, with no accompanying statements."""
 
-        class ReadHint(BaseModel):
-            startPos: list[int, int]
-            startPosDescription: str
-            hintDirection: int
-            hintText: str
-            step: int
-            totalSteps: int
-            # isFirstHint: bool
+    #     class ReadHint(BaseModel):
+    #         startPos: list[int, int]
+    #         startPosDescription: str
+    #         hintDirection: int
+    #         hintText: str
+    #         step: int
+    #         totalSteps: int
+    #         # isFirstHint: bool
 
-        class ReadPlayerPos(BaseModel):
-            playerPos: list[int, int]
+    #     class ReadPlayerPos(BaseModel):
+    #         playerPos: list[int, int]
 
-        client = OpenAI()
+    #     client = OpenAI()
 
-        promptContent = [
-            {
-                "type": "text",
-                "text": getPlayerPosPrompt if getPlayerPos else gpt_prompt,
-            },
-            {
-                "type": "image_url",
-                "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
-            },
-        ]
-        response = client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            temperature=0.3,
-            response_format=ReadPlayerPos if getPlayerPos else ReadHint,
-            messages=[{"role": "user", "content": promptContent}],
-        )
-        decoded_hint = self.auto_detect_and_fix(response.choices[0].message.parsed)
-        serialized_hint = decoded_hint.json()
-        self.log_message(f"GPT Response: {serialized_hint}")
-        return serialized_hint
+    #     promptContent = [
+    #         {
+    #             "type": "text",
+    #             "text": getPlayerPosPrompt if getPlayerPos else gpt_prompt,
+    #         },
+    #         {
+    #             "type": "image_url",
+    #             "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
+    #         },
+    #     ]
+    #     response = client.beta.chat.completions.parse(
+    #         model="gpt-4o-mini",
+    #         temperature=0.3,
+    #         response_format=ReadPlayerPos if getPlayerPos else ReadHint,
+    #         messages=[{"role": "user", "content": promptContent}],
+    #     )
+    #     decoded_hint = self.auto_detect_and_fix(response.choices[0].message.parsed)
+    #     serialized_hint = decoded_hint.json()
+    #     return serialized_hint
 
     def input_dofus_hint(self, json_response):
         start_x, start_y = json_response["startPos"]
@@ -987,11 +984,11 @@ class DofusTreasureApp(tk.Tk):
 
             # Take a screenshot of the player position region
             screenshot = pyautogui.screenshot(region=region_tuple)
-            screenshot.save("screenshot.png")
+            # screenshot.save("screenshot.png")
 
             # Send screenshot to GPT to retrieve the player position
-            self.log_message("Sending player position to GPT...")
-            response_data = self.send_to_chatgpt(screenshot, True)
+            self.log_message("Reading player position...")
+            response_data = asyncio.run(read_coordinates_from_image(screenshot))
 
             # Parse the position from the response
             data = json.loads(response_data)

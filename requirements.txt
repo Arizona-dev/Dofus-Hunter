@@ -7,16 +7,13 @@ python-dotenv
 selenium
 pyperclip
 pywinauto
-pytesseract
 charset-normalizer
 pydantic
-opencv-python
 numpy
 tensorflow
 scipy
 fuzzywuzzy
 pygame
-anthropic
 winocr
 asyncio
 
