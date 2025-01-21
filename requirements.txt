@@ -2,7 +2,6 @@ requests
 beautifulsoup4
 pyautogui
 pillow
-openai
 python-dotenv
 selenium
 pyperclip
@@ -10,11 +9,10 @@ pywinauto
 charset-normalizer
 pydantic
 numpy
-tensorflow
 scipy
 fuzzywuzzy
 pygame
-winocr
-asyncio
-
-# To be cleaned up
+pytesseract
+pynput
+mouse
+matplotlib

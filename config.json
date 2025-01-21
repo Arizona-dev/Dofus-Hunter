@@ -1,20 +1,39 @@
 {
   "player_region": {
-    "x": 0,
-    "y": 84,
-    "width": 105,
-    "height": 36
+    "x": 4,
+    "y": 93,
+    "width": 129,
+    "height": 34
   },
   "treasure_region": {
     "x": 0,
-    "y": 201,
-    "width": 359,
-    "height": 430
+    "y": 245,
+    "width": 351,
+    "height": 429
   },
   "chat_region": {
-    "x": 55,
-    "y": 1408,
-    "width": 554,
-    "height": 26
-  }
+    "x": 40,
+    "y": 1410,
+    "width": 571,
+    "height": 25
+  },
+  "click_positions": [
+    [
+      1721,
+      547
+    ],
+    [
+      2397,
+      641
+    ],
+    [
+      1828,
+      580
+    ],
+    [
+      1851,
+      627
+    ]
+  ],
+  "zaap_position": [1515, 560]
 }

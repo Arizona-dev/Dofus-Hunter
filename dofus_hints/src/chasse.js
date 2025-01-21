@@ -23972,7 +23972,7 @@ const listHintId = [
   },
   {
     clueid: "112",
-    hintfr: "Œil de shushu peint",
+    hintfr: "oeil de shushu peint",
   },
   {
     clueid: "113",
@@ -24783,7 +24783,7 @@ $(".hunt-tool-lang input[type=radio]").click(function () {
     },
     {
       clueidfr: "112",
-      cluenamefr: "Œil de shushu peint",
+      cluenamefr: "oeil de shushu peint",
     },
     {
       clueidfr: "113",

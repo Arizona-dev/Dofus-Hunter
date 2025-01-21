@@ -1,0 +1,8 @@
+Original image size: 351x429
+Header split at y=59
+Zone split at y=135
+Footer split at y=297
+Number of total peaks: 20
+Number of valid peaks (40-50): 8
+Left margin cropped: 43 pixels
+Right end: 217 pixels

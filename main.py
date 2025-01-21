@@ -1,37 +1,117 @@
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, messagebox
 import pyautogui
 import threading
 import json
 import os
-import base64
+import re
 import pyperclip
 import random
-import re
 import pygame
-import asyncio
+import time
+import sqlite3
+import numpy as np
+import mouse
+from pynput.keyboard import Key, Controller
 from fuzzywuzzy import fuzz
-from PIL import Image
 from io import BytesIO
 from dotenv import load_dotenv
-from pydantic import BaseModel
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from pywinauto.keyboard import send_keys
-from charset_normalizer import from_bytes
 from OCR.screenshot import (
     read_hunt_from_screenshot,
-    read_coordinates_from_image,
+    process_coordinates_image,
 )
 
 load_dotenv()
 
 CONFIG_FILE = "config.json"
+
+
+class CoordinateHelper:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Coordinate Helper")
+        self.coordinates = []
+        self.waiting = False
+
+    def on_click(self, event):
+        if not self.waiting:
+            self.coordinates.append((event.x, event.y))
+            self.waiting = True
+            print(
+                f"Position {len(self.coordinates)} captured at ({event.x}, {event.y})"
+            )
+            print("Press Enter for next capture, or Escape to finish")
+
+    def on_key(self, event):
+        if event.keysym == "Return" and self.waiting:
+            self.waiting = False
+            print(f"Ready for position {len(self.coordinates) + 1}")
+            print(
+                f"Click position {len(self.coordinates) + 1} (Press Enter for next, Escape to finish)"
+            )
+        elif event.keysym == "Escape":
+            if len(self.coordinates) > 0:
+                self.root.quit()
+            else:
+                print("Cannot finish without at least one position captured")
+
+    def update_label(self, text):
+        self.label.config(text=text)
+
+    def get_coordinates(self):
+        self.root.bind("<Button-1>", self.on_click)
+        self.root.bind("<Key>", self.on_key)
+        self.root.attributes("-alpha", 0.3)
+        self.root.attributes("-fullscreen", True)
+        print("Starting coordinate capture")
+        print("Click positions and press Enter after each click")
+        print("Press Escape when finished")
+        self.root.mainloop()
+        self.root.destroy()
+        return self.coordinates
+
+
+def load_config(filename="config.json"):
+    try:
+        with open(filename, "r") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("Config file is missing.")
+
+
+def save_config(config, filename="config.json"):
+    with open(filename, "w") as f:
+        json.dump(config, f, indent=2)
+
+
+def setup_automation(self):
+    """Interactive setup function to configure click positions"""
+    print("Starting setup mode...")
+    print("You will be asked to click 4 positions.")
+    print("After each click, press any key to continue to next position.")
+
+    # Get click coordinates
+    helper = CoordinateHelper()
+    coordinates = helper.get_coordinates()
+
+    # Load existing config and add coordinates
+    config = load_config()
+    config["click_positions"] = [[x, y] for x, y in coordinates]
+
+    # Save updated config
+    save_config(config)
+
+    print("\nSetup completed! Coordinates saved to config file:")
+    for i, (x, y) in enumerate(coordinates, 1):
+        print(f"Position {i}: ({x}, {y})")
+    return coordinates
 
 
 class RegionSelector(tk.Toplevel):
@@ -111,9 +191,9 @@ class DofusTreasureApp(tk.Tk):
         self.hunt_started = False
         self.last_travel_cmd = None
         self.is_first_hint = True
+        self.current_hunt_id = None
         self.hintDirection = None
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-        self.last_hint_coords = None
 
         # Position near top-right
         self.configure(bg="#2E2E2E")
@@ -147,6 +227,15 @@ class DofusTreasureApp(tk.Tk):
         self.direction_middle = tk.Frame(self.direction_pad, bg="#2E2E2E")
         self.log_frame = tk.Frame(self.main_frame, bg="#2E2E2E")
 
+        # Label to display mouse position
+        self.is_debugging = False
+        self.position_label = tk.Label(
+            self.main_frame, text="Mouse Position: (X, Y)", font=("Arial", 14)
+        )
+        self.toggle_button = tk.Button(
+            self.main_frame, text="Start Debugging", command=self.toggle_debugging
+        )
+
         self.heading_label = tk.Label(
             self.button_row,
             text="Dofus Treasure Hunt",
@@ -173,6 +262,15 @@ class DofusTreasureApp(tk.Tk):
             bg="#5DA130",
             fg="white",
             command=self.start_hunt,
+        )
+
+        self.new_hunt_button = tk.Button(
+            self.main_frame,
+            text="New Hunt",
+            font=("Arial", 12, "bold"),
+            bg="#5DA130",
+            fg="white",
+            command=self.new_hunt,
         )
 
         # Create buttons for each direction
@@ -255,14 +353,71 @@ class DofusTreasureApp(tk.Tk):
             self.place_widgets()
 
         self.initialize_selenium()
+        self.initialize_database()
+
+    def initialize_database(self):
+        self.conn = sqlite3.connect(
+            "progression.db", check_same_thread=False, timeout=10
+        )
+        self.cursor = self.conn.cursor()
+        # Create the `hunt` table with fields for the new structure
+        self.cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS hunt (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                start_pos_zone TEXT,
+                start_pos_x INTEGER,
+                start_pos_y INTEGER,
+                last_hint_pos_x INTEGER,
+                last_hint_pos_y INTEGER,
+                step INTEGER,
+                total_steps INTEGER,
+                hints TEXT,
+                remaining_tries INTEGER,
+                status TEXT CHECK(status IN ('current', 'cancelled', 'finished')) DEFAULT 'current',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        self.conn.commit()
+
+    def close_database(self):
+        if self.conn:
+            self.conn.close()
+
+    def toggle_debugging(self):
+        if self.is_debugging:
+            self.is_debugging = False
+            self.toggle_button.config(text="Start Debugging")
+        else:
+            self.is_debugging = True
+            self.toggle_button.config(text="Stop Debugging")
+            threading.Thread(target=self.update_mouse_position, daemon=True).start()
+
+    def update_mouse_position(self):
+        while self.is_debugging:
+            # Get mouse position
+            x, y = pyautogui.position()
+            position_text = f"Mouse Position: ({x}, {y})"
+
+            # Update the label
+            self.position_label.config(text=position_text)
+
+            # Update every 100 ms
+            time.sleep(0.1)
 
     def place_widgets(self):
         # Heading Label
         self.heading_label.pack(fill=tk.X, pady=10)
 
+        self.position_label.pack(pady=10)
+        self.toggle_button.pack(pady=10)
+
         # Row for Start Hunt and Setup Buttons
         self.separator.pack(in_=self.button_row, fill=tk.X, pady=(0, 20))
         self.start_hunt_button.pack(in_=self.button_row, side=tk.LEFT, expand=tk.TRUE)
+        self.new_hunt_button.pack(in_=self.button_row, side=tk.LEFT, expand=tk.TRUE)
         self.end_hunt_button.pack(in_=self.button_row, side=tk.LEFT, expand=tk.TRUE)
         self.setup_button.pack(in_=self.button_row, side=tk.RIGHT, expand=tk.TRUE)
         self.button_row.pack(pady=0, fill=tk.X)
@@ -289,16 +444,125 @@ class DofusTreasureApp(tk.Tk):
     def end_hunt(self):
         if hasattr(self, "end_hunt_button"):
             self.end_hunt_button.config(state=tk.DISABLED)
-            self.log_message("Hunt ended.", "red")
         else:
             self.log_message("End hunt button not initialized.", "red")
         self.hunt_started = False
-        self.last_hint_coords = None
         self.last_travel_cmd = None
         self.is_first_hint = True
         self.hintDirection = None
         self.selenium_driver.refresh()
+        # Change hunt status to completed
+        if self.current_hunt_id:
+            self.set_hunt_to_finished()
         self.log_message("Hunt ended.", "green")
+
+    def move_mouse_and_click(self, target_x, target_y):
+        steps_per_second = 160
+        duration = 0.3
+        start_x, start_y = mouse.get_position()
+        steps = int(duration * steps_per_second)
+        for step in range(1, steps + 1):
+            # Calculate linear interpolation
+            x = start_x + (target_x - start_x) * (step / steps)
+            y = start_y + (target_y - start_y) * (step / steps)
+
+            # Add small randomness to simulate human movement
+            x += random.uniform(-3, 3)
+            y += random.uniform(-3, 3)
+
+            # Move the mouse to the new position
+            mouse.move(x, y, absolute=True, duration=0)
+
+            # Wait between steps
+            time.sleep(1 / steps_per_second)
+        time.sleep(random.uniform(0.1, 0.3))
+        mouse.press(button="left")
+        time.sleep(random.uniform(0.05, 0.08))
+        mouse.release(button="left")
+
+    def run_automation(self, delay_between_actions=3.2):
+        """Run the automation with specified delays between actions"""
+        config = load_config()
+        if "click_positions" not in config:
+            self.log_message("No coordinates found in config! Please run setup first.")
+            return False
+
+        coordinates = [(pos[0], pos[1]) for pos in config["click_positions"]]
+
+        try:
+            keyboard = Controller()
+            self.log_message("Going to get a new hunt...")
+            time.sleep(1)
+            # Press initial key
+            self.log_message("Pressing 'ç' to use recall potion...")
+            # keyboard.press("ç")
+            # time.sleep(0.05)
+            # keyboard.release("ç")
+            # time.sleep(delay_between_actions)
+
+            # Type travel command
+            self.log_message("Going to La malle au trésor...")
+            self.input_travel_command("/travel -25,-36")
+            send_keys("{ENTER}")
+            time.sleep(5)
+
+            # Perform clicks
+            for i, (x, y) in enumerate(coordinates, 1):
+                self.log_message(f"Clicking position {i}... {x, y}")
+                self.move_mouse_and_click(x, y)
+                time.sleep(delay_between_actions)
+
+            self.log_message("Teleporting to zaap of hunt zone...")
+            # Go to zaap map
+            self.input_travel_command("/travel -27,-36")
+            time.sleep(delay_between_actions * 4)
+            # Click on zaap
+            zaap_position = config.get("zaap_position")
+            if zaap_position:
+                self.move_mouse_and_click(*zaap_position)
+            else:
+                self.log_message(
+                    "Zaap position is not defined in the configuration.", "red"
+                )
+            time.sleep(delay_between_actions)
+            # Enter zaap name
+            current_hunt_progression = self.get_last_progression()
+            start_pos_zone = current_hunt_progression["start_pos_zone"]
+            start_pos_zone = start_pos_zone.split("(")[0].strip()
+            pyautogui.typewrite(start_pos_zone)
+            send_keys("{ENTER}")
+
+            # Go to start coordinates of the new hunt
+            start_pos_x = current_hunt_progression["start_pos_x"]
+            start_pos_y = current_hunt_progression["start_pos_y"]
+            self.input_travel_command(f"/travel {start_pos_x},{start_pos_y}")
+
+            # Wait for the player to reach the target position
+            while True:
+                current_position = self.get_current_player_position()
+
+                # Check if the player has arrived
+                if current_position == (start_pos_x, start_pos_y):
+                    self.log_message(
+                        "Player has successfully reached the start position."
+                    )
+                    break  # Exit the loop when the position matches
+
+                # Log progress and wait before the next check
+                self.log_message(
+                    f"Waiting for player to arrive... Current position: {current_position}"
+                )
+                time.sleep(3)  # Adjust the interval as needed
+
+            self.log_message("\nAutomation completed successfully!")
+
+        except pyautogui.FailSafeException:
+            self.log_message("Automation aborted by moving mouse to corner", "red")
+        except Exception as e:
+            self.log_message(f"An error occurred: {str(e)}", "red")
+
+    def new_hunt(self):
+        threading.Thread(target=self.run_automation, daemon=True).start()
 
     def force_hint_direction(self, direction):
         self.hintDirection = direction
@@ -339,7 +603,11 @@ class DofusTreasureApp(tk.Tk):
         self.log_display.insert(tk.END, message + "\n", (tag_name,))
 
         # Configure the tag with the specified color
-        self.log_display.tag_configure(tag_name, foreground=color)
+        textColor = "black"
+        if color:
+            textColor = color
+
+        self.log_display.tag_configure(tag_name, foreground=textColor)
 
         # Auto-scroll to the latest log
         self.log_display.see(tk.END)
@@ -422,7 +690,7 @@ class DofusTreasureApp(tk.Tk):
 
     def initialize_selenium(self):
         chrome_options = Options()
-        chrome_options.add_argument("--headless")  # Run in the background
+        # chrome_options.add_argument("--headless")  # Run in the background
         chrome_options.add_argument("--disable-gpu")
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")
@@ -490,20 +758,23 @@ class DofusTreasureApp(tk.Tk):
                     treasure_region["width"],
                     treasure_region["height"],
                 )
-                # Sending to OCR
-                self.log_message("Sending hint to OCR...")
-                screenshot = pyautogui.screenshot(region=region_tuple)
-                response_data = asyncio.run(read_hunt_from_screenshot(screenshot))
-                data = json.loads(response_data)
 
+                # Sending to OCR
                 required_fields = [
-                    "startPos",
-                    "startPosDescription",
-                    "hints",
+                    "start_pos_zone",
+                    "start_pos_x",
+                    "start_pos_y",
                     "step",
-                    "totalSteps",
-                    "remainingTries",
+                    "total_steps",
+                    "remaining_tries",
+                    "hints",
+                    "last_hint_pos_x",
+                    "last_hint_pos_y",
                 ]
+                self.log_message("Reading hints...")
+                screenshot = pyautogui.screenshot(region=region_tuple)
+                response_data = read_hunt_from_screenshot(screenshot)
+                data = json.loads(response_data)
                 missing_fields = [
                     field for field in required_fields if field not in data
                 ]
@@ -519,18 +790,19 @@ class DofusTreasureApp(tk.Tk):
 
                 # Check if hints exist and are valid
                 if not data["hints"] or not isinstance(data["hints"], list):
-                    self.log_message(
-                        "Error: No hints provided in response.", "red"
-                    )
+                    self.log_message("Error: No hints provided in response.", "red")
                     # self.next_hint()
                     self.start_hunt_button.config(state=tk.NORMAL)
                     return
 
                 # Retrieve the last hint
                 last_hint = data["hints"][-1]
+                self.log_message(
+                    f"Last hint: {json.dumps(data['hints'][-1], indent=2, ensure_ascii=False)}",
+                    "blue",
+                )
 
-                if self.hintDirection is not None:
-                    last_hint["hintDirection"] = self.hintDirection
+                # self.hintDirection = last_hint["hintDirection"]
 
                 if "hintText" not in last_hint or "hintDirection" not in last_hint:
                     self.log_message(
@@ -540,26 +812,11 @@ class DofusTreasureApp(tk.Tk):
                     # self.next_hint()
                     return
 
-                # Check if hintText is valid
-                if last_hint["hintText"] == "?" or not last_hint["hintText"]:
-                    self.log_message("No hint found. Retrying...", "red")
-                    # self.next_hint()
-                    return
-
                 # Save progression to JSON
-                self.save_progression(data.get("startPosDescription"), data)
-
-                # If it's not the first hint, get current player position
-                if self.is_first_hint:
-                    self.log_message("Retrieving current player position...")
-                    current_x, current_y = self.get_current_player_position()
-                    if current_x is None or current_y is None:
-                        self.log_message(
-                            "Failed to retrieve player position. Retrying...", "red"
-                        )
-                        # self.next_hint()
-                        return
-                    data["startPos"] = [current_x, current_y]
+                self.save_progression(data)
+                # Set is_first_hint to False if it's not step 1 and if the hints array is not length one
+                if data["step"] != 1 or len(data["hints"]) != 1:
+                    self.is_first_hint = False
 
                 if self.hintDirection is None:
                     # Validate hintDirection
@@ -569,33 +826,15 @@ class DofusTreasureApp(tk.Tk):
                             f"Invalid hintDirection: {last_hint['hintDirection']}. Retrying...",
                             "red",
                         )
-                        # self.next_hint()
                         return
-
-                # Check if the coordinates are far from the last hint coordinates. If yes there is a chance that the hint is wrong.
-                if self.last_hint_coords is not None:
-                    distance = abs(
-                        self.last_hint_coords[0] - data["startPos"][0]
-                    ) + abs(self.last_hint_coords[1] - data["startPos"][1])
-                    if distance > 10:
-                        self.log_message(
-                            f"Distance between last hint and current hint is {distance}. Retrying...",
-                            "red",
-                        )
-                        self.next_hint()
-                        return
-                else:
-                    # Setting new hunt position
-                    self.last_travel_cmd = (
-                        f"/travel {data['startPos'][0]} {data['startPos'][1]}"
-                    )
 
                 # Input data into hint finder
                 self.log_message("Searching hint...")
                 travel_cmd = self.input_dofus_hint(data)
                 if travel_cmd is None:
                     self.log_message(
-                        "You can try again by clicking 'Next Hint'.", "red"
+                        "Hint not found, You can try again by clicking 'Next Hint'.",
+                        "red",
                     )
                     self.start_hunt_button.config(state=tk.NORMAL)
                     self.play_with_volume("./assets/error.wav")
@@ -616,8 +855,9 @@ class DofusTreasureApp(tk.Tk):
                 self.last_travel_cmd = travel_cmd
 
                 # Paste the /travel command
-                self.input_travel_command(travel_cmd)
                 pyperclip.copy(travel_cmd)
+                self.input_travel_command(travel_cmd)
+
                 # Reset the UI
                 self.start_hunt_button.config(state=tk.NORMAL)
                 self.hintDirection = None
@@ -627,235 +867,14 @@ class DofusTreasureApp(tk.Tk):
 
         threading.Thread(target=do_hunt).start()
 
-    def auto_detect_and_fix(self, text):
-        try:
-            detected = from_bytes(text.encode()).best()
-            return str(detected)
-        except Exception as e:
-            return text  # Return original if detection fails
-
-    def upscale_to_1080p_and_encode(self, image, playerPos=False):
-        """
-        Upscale the image to 1080p (keeping aspect ratio),
-        and returns the Base64-encoded string of the result.
-
-        Args:
-            region_tuple (tuple): A tuple specifying the region (x, y, width, height).
-
-        Returns:
-            str: Base64-encoded string of the upscaled screenshot.
-        """
-        screenshot = image
-        screenshot.save("last_screenshot.png")
-
-        # Convert screenshot to a PIL image
-        img = screenshot.convert("RGB")
-
-        # Get original dimensions
-        original_width, original_height = img.size
-
-        # Calculate the scaling factor to upscale while keeping aspect ratio
-        target_height = 1080
-        scaling_factor = target_height / original_height
-        target_width = int(original_width * scaling_factor)
-
-        # Resize the image with the calculated dimensions
-        img_resized = img.resize((target_width, target_height), Image.LANCZOS)
-
-        if playerPos is False:
-            img_resized.save("upscaled_screenshot.png")
-        # Save the resized image to a BytesIO buffer
-        buffer = BytesIO()
-        img_resized.save(buffer, format="PNG")
-        buffer.seek(0)  # Move cursor to the start of the buffer
-
-        # Convert the image to Base64
-        base64_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-        return base64_str
-
-    # def send_to_claude(self, image, getPlayerPos=False):
-    #     img_b64_str = self.upscale_to_1080p_and_encode(image, getPlayerPos)
-    #     img_type = "image/png"
-
-    #     prompt = """You are an AI assistant specialized in parsing Dofus treasure hunt hint images. Your task is to analyze the provided image and extract specific information, then return it in a structured JSON format. Follow these instructions carefully:
-
-    #     1. You will be provided with one image, from dofus treasure hunt.
-    #     Each hint line in the image contains the following information:
-    #     - Direction of the hint (hintDirection)
-    #     - Text of the hint (hintText)
-    #     - State of the hint eg: EN COURS or VALIDÉ.
-    #     - Pin icon on the right of the hint eg: white pin.
-
-    #     2. Analyze the treasure_hunt_image to extract the following information:
-    #     a. Starting position coordinates (startPos)
-    #     b. Map description (startPosDescription)
-    #     c. List of hints containing the following information:
-    #         a. Direction of the hint (hintDirection)
-    #         b. Text of the hint (hintText)
-    #     d. Current step number (step)
-    #     e. Total number of steps (totalSteps)
-
-    #     3. When parsing the image, follow these guidelines:
-    #     - The starting position is indicated by "Départ [x, y]".
-    #     - The map description is the text in parentheses below the starting position.
-    #     - Always return the last hint in the list, don't mix up the hints.
-    #     - Ignore question marks "?" in the hint text.
-    #     - Double-check coordinates for negative signs.
-    #     - Double-check the direction you saw of each hint in the list.
-
-    #     4. For the hint direction my app has to receive a number. For each hint, the direction of the arrow on the left of the hint list should be converted to a number:
-    #     - Right = 0
-    #     - Down = 2
-    #     - Left = 4
-    #     - Up = 6
-
-    #     5. Format your response as a JSON object with the following structure:
-    #     Return the hints in the JSON object in the order they appear in the image.
-    #     {
-    #         "startPos": [int, int],
-    #         "startPosDescription": "string",
-    #         "hints": [
-    #             "hintDirection": int,
-    #             "hintText": "string", (Should not contain EN COURS or VALIDÉ)
-    #         ],
-    #         "step": int,
-    #         "totalSteps": int,
-    #         "isFirstHint": bool,
-    #     }
-
-    #     6. If you cannot clearly read or determine any of the required information, use null for that field in the JSON output.
-
-    #     7. Do not include any explanations, comments, or additional text outside of the JSON object in your response."""
-
-    #     getPlayerPosPrompt = """You are an AI assistant specialized in parsing Dofus player coordinates images. Your task is to analyze the provided image and extract the player's current position, then return it in a structured JSON format. Follow these instructions carefully: 
-        
-    #     1. You will be provided with an image containing Dofus player coordinates.
-        
-    #     2. Analyze the player_coordinates_image to extract the following information:
-    #     a. Player's current position coordinates (playerPos) as [x, y]. Ignore any other information in the image.
-        
-    #     3. When parsing the image, follow these guidelines:
-    #     - The player's coordinates are shown as numbers on the image.
-    #     Always double check the reading of the coordinates.
-        
-    #     4. Format your response as a JSON object with the following structure:
-    #     {
-    #         "playerPos": [int, int] (should not contain any other information than the coordinates) and no -Ni
-    #     }
-        
-    #     5. Do not include any explanations, comments, or additional text outside of the JSON object in your response.
-        
-    #     Analyze the provided images and return only the JSON object as described above."""
-
-    #     client = Anthropic()
-
-    #     message = client.messages.create(
-    #         model="claude-3-haiku-20240307",
-    #         max_tokens=1000,
-    #         temperature=0,
-    #         messages=[
-    #             {
-    #                 "role": "user",
-    #                 "content": [
-    #                     {
-    #                         "type": "image",
-    #                         "source": {
-    #                             "type": "base64",
-    #                             "media_type": img_type,
-    #                             "data": img_b64_str,
-    #                         },
-    #                     },
-    #                 ],
-    #             },
-    #             {
-    #                 "role": "user",
-    #                 "content": [
-    #                     {
-    #                         "type": "text",
-    #                         "text": getPlayerPosPrompt if getPlayerPos else prompt,
-    #                     }
-    #                 ],
-    #             },
-    #         ],
-    #         stream=False,
-    #     )
-
-    #     self.log_message(f"Claude Response: {message.content[0].text}")
-    #     return message.content[0].text
-
-    # def send_to_chatgpt(self, image, getPlayerPos=False):
-    #     buffer = BytesIO()
-    #     image.save(buffer, format="PNG")
-    #     buffer.seek(0)
-    #     img_b64_str = base64.b64encode(buffer.getvalue()).decode("utf-8")
-    #     img_type = "image/png"
-
-    #     gpt_prompt = """[Roles: Treasure Hunt Expert]
-    #         When presented with an image containing a Dofus treasure hunt hint, parse the image and respond **only** with JSON format, don't return the three quotes and JSON tag.
-    #         In the list of hints ignore the question marks "?".
-    #         Take care when reading coordinates, don't forget the - sign if there is one, and always double check your reading.
-    #         The text "Départ [x, y]" is the starting position of the hunt.
-    #         The description under it with "(xxxxx)" is the name of the map.
-    #         You should only return the last hint line that you see in the list.
-    #         Analyse all the arrows on the left of the hint list, and return for the last hint the direction of the arrow in this format: Number only, the direction of the last hint should be one of the following: 0 when the arrow is facing East (Right), 2 when the arrow is facing South (Down), 4 when the arrow is facing West (Left), 6 when the arrow is facing North (Up).
-    #         If you see multiple hints in the dofus hunt list, only return the last one that has a white location pin on the right."""
-
-    #     getPlayerPosPrompt = """[Roles: Dofus Expert]
-    #         When presented with an image containing a Dofus player coordinates, parse the image and respond **only** with JSON.
-    #         If you don't receive an image corresponding to a Dofus coordinates, please return an empty object `{}`.
-    #         Do not include any extra text, explanations, or code fences. The JSON must have these keys:
-
-    #         - `"playerPos"`: an array with the x and y coordinates (e.g., `[-16, 1]`).
-
-    #         Example output with no extra verbiage or code fences:
-    #         ```json
-    #         {
-    #         "playerPos": [-16, 2]
-    #         }
-    #         ```
-    #         Focus on providing valid JSON only, with no accompanying statements."""
-
-    #     class ReadHint(BaseModel):
-    #         startPos: list[int, int]
-    #         startPosDescription: str
-    #         hintDirection: int
-    #         hintText: str
-    #         step: int
-    #         totalSteps: int
-    #         # isFirstHint: bool
-
-    #     class ReadPlayerPos(BaseModel):
-    #         playerPos: list[int, int]
-
-    #     client = OpenAI()
-
-    #     promptContent = [
-    #         {
-    #             "type": "text",
-    #             "text": getPlayerPosPrompt if getPlayerPos else gpt_prompt,
-    #         },
-    #         {
-    #             "type": "image_url",
-    #             "image_url": {"url": f"data:{img_type};base64,{img_b64_str}"},
-    #         },
-    #     ]
-    #     response = client.beta.chat.completions.parse(
-    #         model="gpt-4o-mini",
-    #         temperature=0.3,
-    #         response_format=ReadPlayerPos if getPlayerPos else ReadHint,
-    #         messages=[{"role": "user", "content": promptContent}],
-    #     )
-    #     decoded_hint = self.auto_detect_and_fix(response.choices[0].message.parsed)
-    #     serialized_hint = decoded_hint.json()
-    #     return serialized_hint
-
     def input_dofus_hint(self, json_response):
-        start_x, start_y = json_response["startPos"]
+        driver = self.selenium_driver
+        current_hunt_progression = json_response
+        start_x = json_response["start_pos_x"]
+        start_y = json_response["start_pos_y"]
 
         hint_text = json_response["hints"][-1]["hintText"]
         direction_code = str(json_response["hints"][-1]["hintDirection"])
-        driver = self.selenium_driver
 
         # Direction mapping
         # "0" -> East, "2" -> South, "4" -> West, "6" -> North
@@ -867,21 +886,50 @@ class DofusTreasureApp(tk.Tk):
         }
 
         try:
-            if self.is_first_hint is True:
-                # Fill in the position fields for the first hint
-                x_input = driver.find_element(By.ID, "huntposx")
-                y_input = driver.find_element(By.ID, "huntposy")
+            # Check if it's the first step and hint, if yes, input the start position, else get the lastHintPosition from the progression logs
+            x_input = driver.find_element(By.ID, "huntposx")
+            y_input = driver.find_element(By.ID, "huntposy")
+            if self.is_first_hint:
+                print("Its first hint input")
                 x_input.clear()
                 x_input.send_keys(str(start_x))
                 y_input.clear()
                 y_input.send_keys(str(start_y))
                 self.is_first_hint = False
             else:
-                x_input = driver.find_element(By.ID, "huntposx")
-                y_input = driver.find_element(By.ID, "huntposy")
-                self.log_message(
-                    f"Current pos : {x_input.get_attribute('value')}, {y_input.get_attribute('value')}."
-                )
+                # Fill x, y inputs with current position if empty
+                x = x_input.get_attribute("value")
+                y = y_input.get_attribute("value")
+                self.log_message("in else conditon")
+                if int(x) == 0 and int(y) == 0:
+                    print("Its first dofus db input")
+                    current_hunt_progression = self.get_last_progression()
+                    self.log_message(f"in {current_hunt_progression}")
+
+                    if (
+                        current_hunt_progression is None
+                        or current_hunt_progression["last_hint_pos_x"] is None
+                        or current_hunt_progression["last_hint_pos_y"] is None
+                    ):
+                        current_position = self.get_current_player_position()
+                        self.log_message(f"Player pos: {current_position}")
+
+                        if current_position:
+                            x = current_position[0]
+                            y = current_position[1]
+                        else:
+                            self.log_message("Error loading player pos.", "red")
+                    else:
+
+                        x = current_hunt_progression["last_hint_pos_x"]
+                        y = current_hunt_progression["last_hint_pos_y"]
+                        self.log_message(f"seems to have all: {x}, {y}")
+
+                    self.log_message(f"Using pos: [{x}, {y}]")
+                    x_input.clear()
+                    x_input.send_keys(str(x))
+                    y_input.clear()
+                    y_input.send_keys(str(y))
 
             # Click the direction button
             direction_id = direction_map[str(direction_code)]
@@ -902,12 +950,14 @@ class DofusTreasureApp(tk.Tk):
             ]
             for option in enabled_options:
                 option_text = re.sub(r"\s+", " ", option.text.strip().lower())
-                # self.log_message(f"Comparing hint: {option_text}")
 
                 # Calculate similarity score using fuzzy matching
-                similarity_score = fuzz.ratio(normalized_hint_text, option_text)
-
-                if similarity_score >= 85:  # Adjust the threshold as needed
+                similarity_score = self.compare_hint_texts(
+                    normalized_hint_text, option_text
+                )
+                if (
+                    similarity_score >= 95
+                ):  # Using a higher threshold since we're checking word by word
                     select_object.select_by_visible_text(option.text)
                     self.log_message(
                         f"Selected hint: {option.text} (Similarity: {similarity_score}%)",
@@ -922,7 +972,6 @@ class DofusTreasureApp(tk.Tk):
             form.submit()
 
             # Check for the result position
-            # self.log_message("Checking for hint clue result...")
             result_element = WebDriverWait(driver, 5).until(
                 EC.presence_of_element_located(
                     (
@@ -931,45 +980,247 @@ class DofusTreasureApp(tk.Tk):
                     )
                 )
             )
+
+            x = x_input.get_attribute("value")
+            y = y_input.get_attribute("value")
+            current_hunt_progression["last_hint_pos_x"] = x
+            current_hunt_progression["last_hint_pos_y"] = y
+            self.save_progression(current_hunt_progression)
+
             # Extract the data-travel attribute
             return result_element.get_attribute("data-travel")
         except Exception as e:
-            self.log_message(f"Error while inputting hint: {e}", "red")
+            self.log_message(f"Error while searching hint: {e}", "red")
             return None
 
-    def input_travel_command(self, travel_cmd):
-        chat_region = self.config_data["chat_region"]
-        random_x = chat_region["x"] + random.randint(0, chat_region["width"])
-        random_y = chat_region["y"] + random.randint(0, chat_region["height"])
-        pyautogui.click(random_x, random_y)
-        pyautogui.typewrite(travel_cmd)
-        send_keys("{ENTER}")
-        self.play_with_volume("./assets/ping.mp3")
+    def execute_with_retries(self, cursor, query, params, retries=5, delay=0.5):
+        for attempt in range(retries):
+            try:
+                cursor.execute(query, params)
+                return
+            except sqlite3.OperationalError as e:
+                if "database is locked" in str(e):
+                    print(f"Database is locked. Retrying {attempt + 1}/{retries}...")
+                    time.sleep(delay)
+                else:
+                    raise
+        raise ValueError("Failed to execute query after multiple retries.")
 
-    def save_progression(self, hunt_name, data):
+    def save_progression(self, data):
         try:
-            # Ensure directory exists
-            os.makedirs("progression_logs", exist_ok=True)
+            # Serialize hints into JSON
+            hints_json = json.dumps(data.get("hints", []))
+            current_hunt_id = data.get("id")
 
-            # File path
-            file_path = os.path.join("progression_logs", f"{hunt_name}.json")
+            # Retry logic for database access
+            def execute_with_retries(query, params):
+                self.execute_with_retries(self.cursor, query, params)
 
-            # Append new progression to JSON
-            if os.path.exists(file_path):
-                with open(file_path, "r") as file:
-                    progression = json.load(file)
+            if current_hunt_id is None:
+                self.cursor.execute(
+                    """
+                    SELECT * FROM hunt
+                    WHERE status = 'current'
+                    """
+                )
+                current_hunt = self.cursor.fetchone()
+
+                if current_hunt:
+                    self.current_hunt_id = current_hunt[0]
+                    execute_with_retries(
+                        """
+                        UPDATE hunt
+                        SET 
+                            start_pos_zone = ?,
+                            start_pos_x = ?,
+                            start_pos_y = ?,
+                            last_hint_pos_x = ?,
+                            last_hint_pos_y = ?,
+                            step = ?,
+                            total_steps = ?,
+                            hints = ?,
+                            remaining_tries = ?
+                        WHERE id = ?
+                        """,
+                        (
+                            data.get("start_pos_zone"),
+                            data.get("start_pos_x"),
+                            data.get("start_pos_y"),
+                            data.get("last_hint_pos_x"),
+                            data.get("last_hint_pos_y"),
+                            data.get("step"),
+                            data.get("total_steps"),
+                            hints_json,
+                            data.get("remaining_tries"),
+                            current_hunt[0],
+                        ),
+                    )
+                    current_hunt_id = current_hunt[0]
+                else:
+                    execute_with_retries(
+                        """
+                        INSERT INTO hunt (
+                            start_pos_zone,
+                            start_pos_x,
+                            start_pos_y,
+                            last_hint_pos_x,
+                            last_hint_pos_y,
+                            step,
+                            total_steps,
+                            hints,
+                            remaining_tries,
+                            status
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        """,
+                        (
+                            data.get("start_pos_zone"),
+                            data.get("start_pos_x"),
+                            data.get("start_pos_y"),
+                            data.get("last_hint_pos_x"),
+                            data.get("last_hint_pos_y"),
+                            data.get("step"),
+                            data.get("total_steps"),
+                            hints_json,
+                            data.get("remaining_tries"),
+                            "current",
+                        ),
+                    )
+                    self.current_hunt_id = self.cursor.lastrowid
             else:
-                progression = []
+                self.current_hunt_id = current_hunt_id
+                execute_with_retries(
+                    """
+                    INSERT INTO hunt (
+                        id, start_pos_zone, start_pos_x, start_pos_y,
+                        last_hint_pos_x, last_hint_pos_y, step, total_steps, hints, remaining_tries
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        start_pos_zone = excluded.start_pos_zone,
+                        start_pos_x = excluded.start_pos_x,
+                        start_pos_y = excluded.start_pos_y,
+                        last_hint_pos_x = excluded.last_hint_pos_x,
+                        last_hint_pos_y = excluded.last_hint_pos_y,
+                        step = excluded.step,
+                        total_steps = excluded.total_steps,
+                        hints = excluded.hints,
+                        remaining_tries = excluded.remaining_tries
+                    """,
+                    (
+                        current_hunt_id,
+                        data.get("start_pos_zone"),
+                        data.get("start_pos_x"),
+                        data.get("start_pos_y"),
+                        data.get("last_hint_pos_x"),
+                        data.get("last_hint_pos_y"),
+                        data.get("step"),
+                        data.get("total_steps"),
+                        hints_json,
+                        data.get("remaining_tries"),
+                    ),
+                )
 
-            progression.append(data)
+            self.conn.commit()
+            self.log_message(f"Progression saved for id {self.current_hunt_id}.")
 
-            # Save updated progression
-            with open(file_path, "w") as file:
-                json.dump(progression, file, indent=4)
-
-            self.log_message(f"Progression saved to {file_path}")
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                raise ValueError("Database is locked. Please retry.")
+            else:
+                raise
         except Exception as e:
-            self.log_message(f"Failed to save progression: {e}", "red")
+            raise ValueError(e)
+
+    def get_last_progression(self):
+        try:
+            # Retrieve the most recent progression entry by timestamp
+            self.cursor.execute(
+                """
+                SELECT start_pos_zone, start_pos_x, start_pos_y,
+                    last_hint_pos_x, last_hint_pos_y, step, total_steps,
+                    hints, remaining_tries, status, timestamp
+                FROM hunt
+                WHERE status = 'current'
+                ORDER BY timestamp DESC
+                LIMIT 1
+                """
+            )
+            result = self.cursor.fetchone()
+            if result:
+                # Ensure 'hints' is a valid JSON string before deserializing
+                self.current_hunt_id = result[0]
+                print(f"load last hunt {self.current_hunt_id}")
+
+                hints_raw = result[8]
+                try:
+                    hints = (
+                        json.loads(hints_raw)
+                        if isinstance(hints_raw, (str, bytes, bytearray))
+                        else []
+                    )
+                except json.JSONDecodeError:
+                    # Handle invalid JSON data gracefully
+                    self.log_message(
+                        "Invalid JSON in 'hints' column; defaulting to empty list",
+                        "orange",
+                    )
+                    hints = []
+
+                return {
+                    "start_pos_zone": result[0],
+                    "start_pos_x": result[1],
+                    "start_pos_y": result[2],
+                    "last_hint_pos_x": result[3],
+                    "last_hint_pos_y": result[4],
+                    "step": result[5],
+                    "total_steps": result[6],
+                    "hints": hints,
+                    "remaining_tries": result[7],
+                    "timestamp": result[10],
+                }
+        except Exception as e:
+            self.log_message(f"No hunt found: {e}", "orange")
+            return None
+
+    def set_hunt_to_finished(self):
+        """
+        Updates the status of the current hunt to 'finished' in the database.
+        """
+        if not self.current_hunt_id:
+            raise ValueError("Current hunt ID is not set. Cannot update hunt status.")
+
+        try:
+            # Execute the update query
+            self.cursor.execute(
+                """
+                UPDATE hunt
+                SET status = ?
+                WHERE id = ?
+                """,
+                ("finished", self.current_hunt_id),
+            )
+            self.connection.commit()  # Ensure the changes are saved to the database
+            print(f"Hunt ID {self.current_hunt_id} set to 'finished'.")
+        except Exception as e:
+            # Log or raise an exception for debugging
+            print(f"Error updating hunt status: {e}")
+            raise
+
+    def input_travel_command(self, travel_cmd):
+        try:
+            if "chat_region" not in self.config_data:
+                raise ValueError("Chat region not set.")
+            chat_region = self.config_data["chat_region"]
+            random_x = chat_region["x"] + random.randint(0, chat_region["width"])
+            random_y = chat_region["y"] + random.randint(0, chat_region["height"])
+            self.move_mouse_and_click(random_x, random_y)
+            # pyautogui.click(random_x, random_y)
+            pyautogui.typewrite(travel_cmd)
+            send_keys("{ENTER}")
+            send_keys("{ENTER}")
+            self.play_with_volume("./assets/ping.mp3")
+        except Exception as e:
+            self.log_message(f"Error while inputting travel command: {e}", "red")
 
     def get_current_player_position(self):
         try:
@@ -984,23 +1235,44 @@ class DofusTreasureApp(tk.Tk):
 
             # Take a screenshot of the player position region
             screenshot = pyautogui.screenshot(region=region_tuple)
-            # screenshot.save("screenshot.png")
+            # Convert screenshot to numpy array
+            screenshot_array = np.array(screenshot)
 
-            # Send screenshot to GPT to retrieve the player position
+            # Process screenshot to get coordinates
             self.log_message("Reading player position...")
-            response_data = asyncio.run(read_coordinates_from_image(screenshot))
+            response_data = process_coordinates_image(screenshot_array)
 
-            # Parse the position from the response
-            data = json.loads(response_data)
-            player_pos = data.get("playerPos")
-            if player_pos and len(player_pos) == 2:
-                return player_pos[0], player_pos[1]
+            # Check if coordinates were found
+            if response_data["success"] and response_data["coordinates"]:
+                # Get first coordinate pair
+                position = response_data["coordinates"][0]
+                return position["x"], position["y"]
             else:
-                self.log_message(f"Invalid player position data: {data}", "red")
-                raise ValueError(data)
+                error_msg = response_data.get("error", "No coordinates found")
+                raise ValueError(error_msg)
+
         except Exception as e:
             self.log_message(f"Error retrieving player position: {e}", "red")
             return None, None
+
+    def compare_hint_texts(self, hint_text, option_text):
+        # Split into words
+        hint_words = hint_text.lower().split()
+        option_words = option_text.lower().split()
+
+        # If different number of words, they're not the same hint
+        if len(hint_words) != len(option_words):
+            return 0
+
+        # Compare each word pair and get minimum similarity
+        word_similarities = []
+        for hint_word, option_word in zip(hint_words, option_words):
+            word_similarity = fuzz.ratio(hint_word, option_word)
+            word_similarities.append(word_similarity)
+
+        # Return the minimum similarity found
+        # This way, if any word pair has low similarity, the overall score will be low
+        return min(word_similarities)
 
 
 def main():
